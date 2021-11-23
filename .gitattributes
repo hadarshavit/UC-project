@@ -1,0 +1,5 @@
+data/Data_Dictionary_Listing__Of___NYC_Hotels.xlsx filter=lfs diff=lfs merge=lfs -text
+data/Datafiniti_Hotel_Reviews_Jun19.csv filter=lfs diff=lfs merge=lfs -text
+data/Point_Of_Interest filter=lfs diff=lfs merge=lfs -text
+data/apartment_cost_list.csv filter=lfs diff=lfs merge=lfs -text
+data/dataset_TSMC2014_NYCa.csv filter=lfs diff=lfs merge=lfs -text

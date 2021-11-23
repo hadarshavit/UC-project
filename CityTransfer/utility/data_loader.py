@@ -26,43 +26,43 @@ class DataLoader(object):
             self.small_category_dict, self.small_category_dict_reverse = self.load_dianping_data(dianping_data_path)
         self.n_big_category = len(self.big_category_dict)
         self.n_small_category = len(self.small_category_dict)
-        logging.info("[1 /10]       load dianping data done.")
+        logging.info("[1 /10]       load dianping data done.") # reviews
 
         # check enterprise and get small category set
         valid_small_category_set, self.target_enterprise_index, self.all_enterprise_index, \
-            self.portion_enterprise_index = self.check_enterprise(source_area_data, target_area_data)
+            self.portion_enterprise_index = self.check_enterprise(source_area_data, target_area_data) # checks the reviews data
         logging.info("[2 /10]       check enterprise and get small category set.")
 
         # split grid
         self.n_source_grid, self.n_target_grid, self.source_area_longitude_boundary, \
             self.source_area_latitude_boundary, self.target_area_longitude_boundary, self.target_area_latitude_boundary\
-            = self.split_grid()
+            = self.split_grid() # splits the grid of the cities
         logging.info("[3 /10]       split grid done.")
 
         # distribute data into grids
         source_data_dict, target_data_dict, source_grid_enterprise_data, target_grid_enterprise_data \
-            = self.distribute_data(source_area_data, target_area_data)
+            = self.distribute_data(source_area_data, target_area_data) # put each review in the correct grid
         logging.info("[4 /10]       distribute data into grids done.")
 
         # generate rating matrix for Transfer Rating Prediction Model
         self.source_rating_matrix, self.target_rating_matrix = self.generate_rating_matrix(source_grid_enterprise_data,
-                                                                                           target_grid_enterprise_data)
+                                                                                           target_grid_enterprise_data) # ratings matrix
         logging.info("[5 /10]       generate rating matrix for Transfer Rating Prediction Model done.")
 
         # extract geographic features
         source_geographic_features, target_geographic_features = self.extract_geographic_features(source_data_dict,
-                                                                                                  target_data_dict)
+                                                                                                  target_data_dict) # geo features
         logging.info("[6 /10]       extract geographic features done.")
 
         # extract commercial features
         source_commercial_features, target_commercial_features = \
-            self.extract_commercial_features(source_data_dict, target_data_dict, valid_small_category_set)
+            self.extract_commercial_features(source_data_dict, target_data_dict, valid_small_category_set) # commercial features
         logging.info("[7 /10]       extract commercial features done.")
 
         # combine features
         self.source_feature, self.target_feature, self.feature_dim = \
             self.combine_features(source_geographic_features, target_geographic_features,
-                                  source_commercial_features, target_commercial_features)
+                                  source_commercial_features, target_commercial_features) # combine features
         logging.info("[8 /10]       combine features done.")
 
         # get PCCS and generate delta set
