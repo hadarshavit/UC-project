@@ -224,7 +224,7 @@ class DataLoader(object):
 
     def extract_geographic_features(self, source_data_dict, target_data_dict):
         traffic_convenience_corresponding_ids = [self.small_category_dict[x]
-                                                 for x in ['公交车', '地铁站', '停车场'] if x in self.small_category_dict]
+                                                 for x in ['公交车', '地铁站', '停车场'] if x in self.small_category_dict] # bus, subway, parking lot
 
         def get_feature(grid_info):
             #  columns = ['shop_id', 'name', 'big_category', 'small_category',
