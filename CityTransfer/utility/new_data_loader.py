@@ -3,6 +3,7 @@
 # @Author  : Binjie Zhang (bj_zhang@seu.edu.cn)
 # @File    : _discarded_data_loader.py
 import gc
+import math
 import os
 import pandas as pd
 import numpy as np
@@ -19,8 +20,17 @@ class DataLoader(object):
         print(os.getcwd())
         logging.basicConfig(level=logging.DEBUG)
 
-        source_area_data = pd.read_csv('Orlando.csv', index_col=0)
-        target_area_data = pd.read_csv('Austin.csv', index_col=0)
+        source_area_data = pd.read_csv('orlando_cats.csv', index_col=0)
+        target_area_data = pd.read_csv('austin_cats.csv', index_col=0)
+
+        cats = pd.concat([source_area_data['categories'], target_area_data['categories']]).drop_duplicates().tolist()
+        self.categories = dict()
+        index = 0
+        for cat in cats:
+            self.categories[cat] = index
+            index += 1
+
+        self.n_categories = len(cats)
 
         # self.n_big_category = len(self.big_category_dict) # TODO what is the small and big category
         # self.n_small_category = len(self.small_category_dict)
@@ -158,16 +168,16 @@ class DataLoader(object):
 
         source_area_longitude_boundary = np.arange(source_data['longitude'].min(),
                                                    source_data['longitude'].max(),
-                                                   0.01)
+                                                   0.005)
         source_area_latitude_boundary = np.arange(source_data['latitude'].min(),
                                                    source_data['latitude'].max(),
-                                                  0.01)
+                                                  0.0045)
         target_area_longitude_boundary = np.arange(target_data['longitude'].min(),
                                                    target_data['longitude'].max(),
-                                                   0.01)
+                                                   0.005)
         target_area_latitude_boundary = np.arange(source_data['latitude'].min(),
                                                    source_data['latitude'].max(),
-                                                  0.01) # TODO calculate meters -> degree
+                                                  0.0045) # TODO calculate meters -> degree
 
         n_source_grid = (len(source_area_longitude_boundary) - 1) * (len(source_area_latitude_boundary) - 1)
         n_target_grid = (len(target_area_longitude_boundary) - 1) * (len(target_area_latitude_boundary) - 1)
@@ -230,25 +240,23 @@ class DataLoader(object):
 
             human_flow = 0
             traffic_convenience = 0
-            POI_count = dict() # TODO
+            POI_count = np.zeros(self.n_categories)
 
             for POI in grid_info:
                 # Equation (3)
                 # if POI[3] in traffic_convenience_corresponding_ids: TODO
                 #     traffic_convenience -= 1
                 # Equation (4)
-                if POI['categories'] in POI_count:
-                    POI_count[POI['categories']] += 1 # TODO split categories
-                else:
-                    POI_count[POI['categories']] = 1
+                category = self.categories[POI['categories']]
+                POI_count[category] += 1
                 # Equation (2)
                 human_flow -= POI[6]
 
+            POI_not0 = POI_count[POI_count != 0]
             # Equation (1)
-            diversity = 0 # TODO-1 * np.sum([(v / (1.0 * n_grid_POI)) * np.log(v / (1.0 * n_grid_POI))
-                              #       if v != 0 else 0 for v in POI_count])
+            diversity = -1 * np.sum([(POI_not0 / (1.0 * n_grid_POI)) * np.log(POI_not0 / (1.0 * n_grid_POI))])
 
-            return np.array([diversity, human_flow, traffic_convenience]) #, POI_count
+            return np.concatenate(([diversity, human_flow, traffic_convenience], POI_count))
 
         source_geographic_features = []
         target_geographic_features = []
@@ -266,8 +274,8 @@ class DataLoader(object):
         human_flow_min = min(np.min(source_geographic_features[:, 1]), np.min(target_geographic_features[:, 1]))
         traffic_conv_max = max(np.max(source_geographic_features[:, 2]), np.max(target_geographic_features[:, 2]))
         traffic_conv_min = min(np.min(source_geographic_features[:, 2]), np.min(target_geographic_features[:, 2]))
-        POI_cnt_max = 0#TODO max(np.max(source_geographic_features[:, 3:]), np.max(target_geographic_features[:, 3:]))
-        POI_cnt_min = 0#TODO min(np.min(source_geographic_features[:, 3:]), np.min(target_geographic_features[:, 3:]))
+        POI_cnt_max = max(np.max(source_geographic_features[:, 3:]), np.max(target_geographic_features[:, 3:]))
+        POI_cnt_min = min(np.min(source_geographic_features[:, 3:]), np.min(target_geographic_features[:, 3:]))
 
         source_geographic_features[:, 0] = _norm(source_geographic_features[:, 0], diversity_max, diversity_min)
         source_geographic_features[:, 1] = _norm(source_geographic_features[:, 1], human_flow_max, human_flow_min)
@@ -416,7 +424,7 @@ class DataLoader(object):
 
         delta_source_grid = np.array(delta_source_grid)
         delta_target_grid = np.array(delta_target_grid)
-
+        score = torch.Tensor(score)
         return score, delta_source_grid, delta_target_grid
 
     def generate_training_and_testing_index(self):
