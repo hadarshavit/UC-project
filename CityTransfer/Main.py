@@ -59,10 +59,10 @@ if __name__ == '__main__':
     target_batch = [data.target_grid_ids[i: i + args.batch_size]
                     for i in range(0, len(data.target_grid_ids), args.batch_size)]
     while len(source_batch) < len(target_batch):
-        random_i = random.randint(0, len(data.source_grid_ids))
+        random_i = random.randint(0, len(data.source_grid_ids) - 1)
         source_batch.append(data.source_grid_ids[random_i: random_i + args.batch_size])
     while len(target_batch) < len(source_batch):
-        random_i = random.randint(0, len(data.target_grid_ids))
+        random_i = random.randint(0, len(data.target_grid_ids) - 1)
         target_batch.append(data.target_grid_ids[random_i: random_i + args.batch_size])
     logging.info("--------------load data done.")
 
@@ -92,7 +92,7 @@ if __name__ == '__main__':
 
     # training
     logging.info("[!]-----------start training.")
-    for epoch in range(1):
+    for epoch in range(args.n_epoch):
         model.train()
         iter_total_loss = 0
         for batch_iter in range(len(source_batch)):

@@ -172,18 +172,18 @@ class DataLoader(object):
         #                                            self.args.source_area_coordinate[1])
 
 
-        source_area_longitude_boundary = np.arange(source_data['longitude'].min(),
-                                                   source_data['longitude'].max(),
-                                                   0.005 * 4)
-        source_area_latitude_boundary = np.arange(source_data['latitude'].min(),
-                                                   source_data['latitude'].max(),
-                                                  0.0045 * 4)
-        target_area_longitude_boundary = np.arange(target_data['longitude'].min(),
-                                                   target_data['longitude'].max(),
-                                                   0.005 * 4)
-        target_area_latitude_boundary = np.arange(source_data['latitude'].min(),
-                                                   source_data['latitude'].max(),
-                                                  0.0045 * 4) # 500m
+        source_area_longitude_boundary = np.arange(-81.5,
+                                                   -81.2,
+                                                   0.005 * 1)
+        source_area_latitude_boundary = np.arange(28.34,
+                                                   28.61,
+                                                  0.0045 * 1)
+        target_area_longitude_boundary = np.arange(-98,
+                                                   -97.5,
+                                                   0.005 * 1)
+        target_area_latitude_boundary = np.arange(30.1,
+                                                   30.5,
+                                                  0.0045 * 1) # 500m
 
         n_source_grid = (len(source_area_longitude_boundary) - 1) * (len(source_area_latitude_boundary) - 1)
         n_target_grid = (len(target_area_longitude_boundary) - 1) * (len(target_area_latitude_boundary) - 1)
@@ -199,39 +199,60 @@ class DataLoader(object):
         target_data_dict = collections.defaultdict(list)
         source_grid_enterprise_data = collections.defaultdict(list)
         target_grid_enterprise_data = collections.defaultdict(list)
-
+        a = 0
         for _, item in source_area_data.iterrows():
             lon_index = 0
+            found = False
             for index, _ in enumerate(self.source_area_longitude_boundary[:-1]):
                 if self.source_area_longitude_boundary[index] <= item['longitude'] <= self.source_area_longitude_boundary[index + 1]:
                     lon_index = index
+                    found = True
                     break
+            if not found:
+                a += 1
+                continue # TODO check why not found
             lat_index = 0
+            found = False
             for index, _ in enumerate(self.source_area_latitude_boundary[:-1]):
                 if self.source_area_latitude_boundary[index] <= item['latitude'] <= self.source_area_latitude_boundary[index + 1]:
                     lat_index = index
+                    found = True
                     break
+            if not found:
+                a += 1
+                continue # TODO check why not found
             grid_id = lon_index * (len(self.source_area_latitude_boundary) - 1) + lat_index
             source_data_dict[grid_id].append(item)
             if item['name'] in ['Starbucks', 'Dunkin\'']:
                 source_grid_enterprise_data[grid_id].append(item)
-
+        print('not found source:', a, source_area_data.size)
+        a = 0
         for _, item in target_area_data.iterrows():
             lon_index = 0
+            found = False
             for index, _ in enumerate(self.target_area_longitude_boundary[:-1]):
                 if self.target_area_longitude_boundary[index] <= item['longitude'] <= self.target_area_longitude_boundary[index + 1]:
                     lon_index = index
+                    found = True
                     break
+            if not found:
+                a += 1
+                continue # TODO check why not found
             lat_index = 0
+            found = False
             for index, _ in enumerate(self.target_area_latitude_boundary[:-1]):
                 if self.target_area_latitude_boundary[index] <= item['latitude'] <= self.target_area_latitude_boundary[index + 1]:
                     lat_index = index
+                    found = True
                     break
+            if not found:
+                a += 1
+                continue # TODO check why not found
             grid_id = lon_index * (len(self.target_area_latitude_boundary) - 1) + lat_index
             target_data_dict[grid_id].append(item)
             if item['name'] in ['Starbucks', 'Dunkin\'']:
                 target_grid_enterprise_data[grid_id].append(item)
-
+        print('not found target', a, target_area_data.size)
         return source_data_dict, target_data_dict, source_grid_enterprise_data, target_grid_enterprise_data
 
     def extract_geographic_features(self, source_data_dict, target_data_dict):

@@ -5,7 +5,7 @@ class VisualizationTool(object):
     def __init__(self, args):
         self.args = args
         self.visual_map = folium.Map(
-            tiles='http://webrd02.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}',
+            # tiles='http://webrd02.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}',
             attr='default', location=[32.041544, 118.767413], zoom_start=12)
 
     def draw_map(self, real_bounds, pred_circles, pred_back_circles, other_shops_bounds):

@@ -17,12 +17,12 @@ class AutoEncoder(nn.Module):
         self.mid_dim = math.ceil(math.sqrt(in_dim*out_dim))
         self.encoder = nn.Sequential(
             nn.Linear(in_dim, self.mid_dim),
-            nn.Tanh(),
+            nn.SELU(),
             nn.Linear(self.mid_dim, out_dim),
         )
         self.decoder = nn.Sequential(
             nn.Linear(out_dim, self.mid_dim),
-            nn.Tanh(),
+            nn.SELU(),
             nn.Linear(self.mid_dim, in_dim),
         )
 
