@@ -119,7 +119,7 @@ def parse_args():
     parser.add_argument('--stopping_steps', type=int, default=10,
                         help='Number of epoch for early stopping')
 
-    parser.add_argument('--print_every', type=int, default=1,
+    parser.add_argument('--print_every', type=int, default=100,
                         help='Iter interval of printing loss.')
     parser.add_argument('--O1_print_every', type=int, default=1,
                         help='Iter interval of printing O1 loss.')

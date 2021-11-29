@@ -18,7 +18,7 @@ class DataLoader(object):
     def __init__(self, args):
         self.args = args
         print(os.getcwd())
-        logging.basicConfig(level=logging.DEBUG)
+        # logging.basicConfig(level=logging.DEBUG)
 
         source_area_data = pd.read_csv('orlando_cats.csv', index_col=0)
         target_area_data = pd.read_csv('austin_cats.csv', index_col=0)
@@ -32,9 +32,15 @@ class DataLoader(object):
 
         self.n_categories = len(cats)
 
-        # self.n_big_category = len(self.big_category_dict) # TODO what is the small and big category
+        # self.n_big_category = len(self.big_category_dict) #
         # self.n_small_category = len(self.small_category_dict)
         # logging.info("[1 /10]       load dianping data done.") # reviews
+
+        # check enterprise and get small category set
+        # valid_small_category_set, self.target_enterprise_index, self.all_enterprise_index, \
+        valid_small_category_set, self.target_enterprise_index, self.all_enterprise_index, \
+            self.portion_enterprise_index = self.check_enterprise(source_area_data, target_area_data) # checks the reviews data
+        logging.info("[2 /10]       check enterprise and get small category set.")
 
         # split grid
         self.n_source_grid, self.n_target_grid, self.source_area_longitude_boundary, \
@@ -54,27 +60,27 @@ class DataLoader(object):
 
         # extract geographic features
         source_geographic_features, target_geographic_features = self.extract_geographic_features(source_data_dict,
-                                                                                                  target_data_dict) # geo features TODO
+                                                                                                  target_data_dict) # geo features
         logging.info("[6 /10]       extract geographic features done.")
 
         # extract commercial features
         source_commercial_features, target_commercial_features = \
-            self.extract_commercial_features(source_data_dict, target_data_dict) # commercial features TODO
+            self.extract_commercial_features(source_data_dict, target_data_dict) # commercial features
         logging.info("[7 /10]       extract commercial features done.")
 
         # combine features
         self.source_feature, self.target_feature, self.feature_dim = \
             self.combine_features(source_geographic_features, target_geographic_features,
-                                  source_commercial_features, target_commercial_features) # combine features TODO
+                                  source_commercial_features, target_commercial_features) # combine features
         logging.info("[8 /10]       combine features done.")
 
         # get PCCS and generate delta set
         self.PCCS_score, self.delta_source_grid, self.delta_target_grid = \
             self.generate_delta_set(self.source_feature, self.target_feature)
-        logging.info("[9 /10]       get PCCS and generate delta set done.") # TODO
+        logging.info("[9 /10]       get PCCS and generate delta set done.") #
 
         # generate training and testing index
-        self.source_grid_ids, self.target_grid_ids = self.generate_training_and_testing_index() # TODO
+        self.source_grid_ids, self.target_grid_ids = self.generate_training_and_testing_index() #
         logging.info("[10/10]       generate training and testing index done.")
 
         # change data to tensor
@@ -131,30 +137,30 @@ class DataLoader(object):
         target_chains = collections.defaultdict(list)
 
         valid_small_category_set = set()
-        for item in source_area_data:
-            if item[1] in self.args.enterprise:
-                source_chains[item[1]].append(item)
+        for _, item in source_area_data.iterrows():
+            if item['name'] in ['Starbucks', 'Dunkin\'']:
+                source_chains[item['name']].append(item)
                 valid_small_category_set.add(item[3])
-        for item in target_area_data:
-            if item[1] in self.args.enterprise:
-                target_chains[item[1]].append(item)
+        for _, item in target_area_data.iterrows():
+            if item['name'] in ['Starbucks', 'Dunkin\'']:
+                target_chains[item['name']].append(item)
                 valid_small_category_set.add(item[3])
 
-        for name in self.args.enterprise:
+        for name in['Starbucks', 'Dunkin\'']:
             if len(source_chains[name]) == 0 or len(target_chains[name]) == 0:
                 logging.error('品牌 {} 并非在原地区和目的地区都有门店'.format(name))
                 exit(1)
 
         target_enterprise_index = -1
-        for idx, name in enumerate(self.args.enterprise):
-            if name == self.args.target_enterprise:
+        for idx, name in enumerate(['Starbucks', 'Dunkin\'']):
+            if name == 'Dunkin\'':
                 target_enterprise_index = idx
         if target_enterprise_index < 0:
-            logging.error('目标企业{}必须在所选择的几家连锁企业中'.format(self.args.target_enterprise))
+            logging.error('目标企业{}必须在所选择的几家连锁企业中'.format('Dunkin\''))
             exit(1)
 
-        all_enterprise_index = [idx for idx, _ in enumerate(self.args.enterprise)]
-        portion_enterprise_index = [idx for idx, _ in enumerate(self.args.enterprise)
+        all_enterprise_index = [idx for idx, _ in enumerate(['Starbucks', 'Dunkin\''])]
+        portion_enterprise_index = [idx for idx, _ in enumerate(['Starbucks', 'Dunkin\''])
                                     if idx != target_enterprise_index]
 
         return valid_small_category_set, target_enterprise_index, all_enterprise_index, portion_enterprise_index
@@ -168,16 +174,16 @@ class DataLoader(object):
 
         source_area_longitude_boundary = np.arange(source_data['longitude'].min(),
                                                    source_data['longitude'].max(),
-                                                   0.005)
+                                                   0.005 * 4)
         source_area_latitude_boundary = np.arange(source_data['latitude'].min(),
                                                    source_data['latitude'].max(),
-                                                  0.0045)
+                                                  0.0045 * 4)
         target_area_longitude_boundary = np.arange(target_data['longitude'].min(),
                                                    target_data['longitude'].max(),
-                                                   0.005)
+                                                   0.005 * 4)
         target_area_latitude_boundary = np.arange(source_data['latitude'].min(),
                                                    source_data['latitude'].max(),
-                                                  0.0045) # TODO calculate meters -> degree
+                                                  0.0045 * 4) # 500m
 
         n_source_grid = (len(source_area_longitude_boundary) - 1) * (len(source_area_latitude_boundary) - 1)
         n_target_grid = (len(target_area_longitude_boundary) - 1) * (len(target_area_latitude_boundary) - 1)
@@ -250,7 +256,7 @@ class DataLoader(object):
                 category = self.categories[POI['categories']]
                 POI_count[category] += 1
                 # Equation (2)
-                human_flow -= POI[6]
+                human_flow -= POI['review_count']
 
             POI_not0 = POI_count[POI_count != 0]
             # Equation (1)
@@ -397,7 +403,7 @@ class DataLoader(object):
             source_std = np.std(source_info, axis=1)[:, None]
             target_std = np.std(target_info, axis=1)[:, None]
             idx_score = (np.matmul((source_info - source_mean), (target_info - target_mean).T) / self.feature_dim) / \
-                        (np.matmul(source_std, target_std.T) + 1e-9)
+                        (np.matmul(source_std, target_std.T) + 1e-9) # TODO maybe use numpy.corrcoef
             score.append(idx_score)
         # score = np.array(score)
         # score = torch.Tensor(score)

@@ -92,7 +92,7 @@ if __name__ == '__main__':
 
     # training
     logging.info("[!]-----------start training.")
-    for epoch in range(args.n_epoch):
+    for epoch in range(1):
         model.train()
         iter_total_loss = 0
         for batch_iter in range(len(source_batch)):
@@ -175,7 +175,7 @@ if __name__ == '__main__':
     plt.subplot(1, 2, 2)
     plt.xlabel("epoch")
     plt.ylabel("mse")
-    plt.plot(range(len(mse_list)), mse_list)
+    plt.plot(range(len(mse_list)), [mse.cpu() for mse in mse_list])
     plt.show()
 
     # testing

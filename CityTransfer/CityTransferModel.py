@@ -85,6 +85,9 @@ class CityTransfer(nn.Module):
         enterprise_bias = self.b[enterprise_index]
 
         if grid_type == 's':
+            s = self.e_source[grid_index]
+            g = len(grid_index)
+            # print(grid_index)
             grid_bias = self.e_source[grid_index].reshape(-1, len(grid_index))
         elif grid_type == 't':
             grid_bias = self.e_target[grid_index].reshape(-1, len(grid_index))

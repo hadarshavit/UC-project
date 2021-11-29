@@ -4,10 +4,10 @@ from CityTransfer.utility.log_helper import logging
 
 
 def dcg_score(score, rank):
-    r = np.asfarray(score)
+    r = np.asfarray(score.cpu())
     if len(r):
         rank = [v+1 for v in rank]
-        return torch.sum(score / np.log2(rank))
+        return torch.sum(score.cpu() / np.log2(rank))
     else:
         return 0
 
@@ -17,8 +17,8 @@ def ndcf_at_k(rel_score, pred_score, k):
     _, pred_rank = torch.sort(pred_score, descending=True)
     valid_len = min(len(torch.nonzero(sorted_rel_score)), k)
 
-    rel_rank = rel_rank.numpy()
-    pred_rank = pred_rank.numpy()
+    rel_rank = rel_rank.cpu().numpy()
+    pred_rank = pred_rank.cpu().numpy()
 
     rel2score = {pos: sc for pos, sc in zip(rel_rank, sorted_rel_score)}
     rel2rank = {pos: sc+1 for pos, sc in zip(rel_rank, range(len(rel_rank)))}
@@ -42,8 +42,8 @@ def ndcf_at_k_test(rel_score, pred_score, k):
     _, pred_rank = torch.sort(pred_score, descending=True)
     valid_len = min(len(torch.nonzero(sorted_rel_score)), k)
 
-    rel_rank = rel_rank.numpy()
-    pred_rank = pred_rank.numpy()
+    rel_rank = rel_rank.cpu().numpy()
+    pred_rank = pred_rank.cpu().numpy()
 
     rel2score = {pos: sc for pos, sc in zip(rel_rank, sorted_rel_score)}
     rel2rank = {pos: sc+1 for pos, sc in zip(rel_rank, range(len(rel_rank)))}
