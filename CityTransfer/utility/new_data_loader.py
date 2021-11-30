@@ -138,29 +138,29 @@ class DataLoader(object):
 
         valid_small_category_set = set()
         for _, item in source_area_data.iterrows():
-            if item['name'] in ['Starbucks', 'Dunkin\'']:
+            if item['name'] in self.args.enterprise:
                 source_chains[item['name']].append(item)
-                valid_small_category_set.add(item[3])
+                valid_small_category_set.add(item[3])  # TODO
         for _, item in target_area_data.iterrows():
-            if item['name'] in ['Starbucks', 'Dunkin\'']:
+            if item['name'] in self.args.enterprise:
                 target_chains[item['name']].append(item)
-                valid_small_category_set.add(item[3])
+                valid_small_category_set.add(item[3]) # TODO
 
-        for name in['Starbucks', 'Dunkin\'']:
+        for name in self.args.enterprise:
             if len(source_chains[name]) == 0 or len(target_chains[name]) == 0:
                 logging.error('品牌 {} 并非在原地区和目的地区都有门店'.format(name))
                 exit(1)
 
         target_enterprise_index = -1
-        for idx, name in enumerate(['Starbucks', 'Dunkin\'']):
-            if name == 'Dunkin\'':
+        for idx, name in enumerate(self.args.enterprise):
+            if name == self.args.target_enterprise:
                 target_enterprise_index = idx
         if target_enterprise_index < 0:
-            logging.error('目标企业{}必须在所选择的几家连锁企业中'.format('Dunkin\''))
+            logging.error('目标企业{}必须在所选择的几家连锁企业中'.format(self.args.target_enterprise))
             exit(1)
 
-        all_enterprise_index = [idx for idx, _ in enumerate(['Starbucks', 'Dunkin\''])]
-        portion_enterprise_index = [idx for idx, _ in enumerate(['Starbucks', 'Dunkin\''])
+        all_enterprise_index = [idx for idx, _ in enumerate(self.args.enterprise)]
+        portion_enterprise_index = [idx for idx, _ in enumerate(self.args.enterprise)
                                     if idx != target_enterprise_index]
 
         return valid_small_category_set, target_enterprise_index, all_enterprise_index, portion_enterprise_index
@@ -223,7 +223,7 @@ class DataLoader(object):
                 continue # TODO check why not found
             grid_id = lon_index * (len(self.source_area_latitude_boundary) - 1) + lat_index
             source_data_dict[grid_id].append(item)
-            if item['name'] in ['Starbucks', 'Dunkin\'']:
+            if item['name'] in self.args.enterprise:
                 source_grid_enterprise_data[grid_id].append(item)
         print('not found source:', a, source_area_data.size)
         a = 0
@@ -250,7 +250,7 @@ class DataLoader(object):
                 continue # TODO check why not found
             grid_id = lon_index * (len(self.target_area_latitude_boundary) - 1) + lat_index
             target_data_dict[grid_id].append(item)
-            if item['name'] in ['Starbucks', 'Dunkin\'']:
+            if item['name'] in self.args.enterprise:
                 target_grid_enterprise_data[grid_id].append(item)
         print('not found target', a, target_area_data.size)
         return source_data_dict, target_data_dict, source_grid_enterprise_data, target_grid_enterprise_data
@@ -325,14 +325,14 @@ class DataLoader(object):
             #            When calculating Complementarity, we use big category.
             #  enterprise size * commercial features size i.e. Density, Competitiveness, Complementarity
 
-            grid_feature = np.zeros((len(['Starbucks', 'Dunkin\'']), 3))
+            grid_feature = np.zeros((len(self.args.enterprise), 3))
             Nc = 0
             big_category_POI_count = np.zeros(2)
             for POI in grid_info:
                 # big_category_POI_count[POI[2]] += 1
                 # if POI[3] in valid_small_category_set:
                 #     Nc += 1 TODO
-                for idx, name in enumerate(['Starbucks', 'Dunkin\'']):
+                for idx, name in enumerate(self.args.enterprise):
                     if POI[1] == name:
                         # Equation (5)
                         grid_feature[idx][0] += 1
@@ -369,9 +369,9 @@ class DataLoader(object):
 
     def combine_features(self, source_geographic_features, target_geographic_features,
                          source_commercial_features, target_commercial_features):
-        source_geographic_features = np.expand_dims(source_geographic_features, 0).repeat(len(['Starbucks', 'Dunkin\'']),
+        source_geographic_features = np.expand_dims(source_geographic_features, 0).repeat(len(self.args.enterprise),
                                                                                           axis=0)
-        target_geographic_features = np.expand_dims(target_geographic_features, 0).repeat(len(['Starbucks', 'Dunkin\'']),
+        target_geographic_features = np.expand_dims(target_geographic_features, 0).repeat(len(self.args.enterprise),
                                                                                           axis=0)
         source_feature = np.concatenate((source_geographic_features, source_commercial_features), axis=2)
         target_feature = np.concatenate((target_geographic_features, target_commercial_features), axis=2)
@@ -384,26 +384,26 @@ class DataLoader(object):
     def generate_rating_matrix(self, source_grid_enterprise_data, target_grid_enterprise_data):
         # columns = ['shop_id', 'name', 'big_category', 'small_category',
         #             'longitude', 'latitude', 'review_count', 'branchname']
-        source_rating_matrix = np.zeros((len(['Starbucks', 'Dunkin\'']), self.n_source_grid))
-        target_rating_matrix = np.zeros((len(['Starbucks', 'Dunkin\'']), self.n_target_grid))
+        source_rating_matrix = np.zeros((len(self.args.enterprise), self.n_source_grid))
+        target_rating_matrix = np.zeros((len(self.args.enterprise), self.n_target_grid))
         for grid_id in range(self.n_source_grid):
             for item in source_grid_enterprise_data[grid_id]:
-                for idx, name in enumerate(['Starbucks', 'Dunkin\'']):
+                for idx, name in enumerate(self.args.enterprise):
                     if item['name'] == name:
-                        source_rating_matrix[idx][grid_id] += item[6]
+                        source_rating_matrix[idx][grid_id] += item['stars'] * item['review_count'] # TODO maybe change?
 
         for grid_id in range(self.n_target_grid):
             for item in target_grid_enterprise_data[grid_id]:
-                for idx, name in enumerate(['Starbucks', 'Dunkin\'']):
+                for idx, name in enumerate(self.args.enterprise):
                     if item['name'] == name:
-                        target_rating_matrix[idx][grid_id] += item[6]
+                        target_rating_matrix[idx][grid_id] += item['stars'] * item['review_count'] # TODO
         # score_max = max(np.max(source_rating_matrix), np.max(target_rating_matrix))
         # score_min = min(np.min(source_rating_matrix), np.min(target_rating_matrix))
         # source_rating_matrix = _norm(source_rating_matrix, score_max, score_min) * 5
         # target_rating_matrix = _norm(target_rating_matrix, score_max, score_min) * 5
 
-        source_rating_matrix = _norm(source_rating_matrix, 400, 0) * 5
-        target_rating_matrix = _norm(target_rating_matrix, 400, 0) * 5
+        source_rating_matrix = _norm(source_rating_matrix, self.args.score_norm_max, 0) * 5
+        target_rating_matrix = _norm(target_rating_matrix, self.args.score_norm_max, 0) * 5
 
         source_rating_matrix = torch.Tensor(source_rating_matrix)
         target_rating_matrix = torch.Tensor(target_rating_matrix)
@@ -416,7 +416,7 @@ class DataLoader(object):
         gc.collect(0)
         # Equation (13)
         score = []
-        for idx, _ in enumerate(['Starbucks', 'Dunkin\'']):
+        for idx, _ in enumerate(self.args.enterprise):
             source_info = source_feature[idx]
             target_info = target_feature[idx]
             source_mean = np.mean(source_info, axis=1)[:, None]
@@ -429,19 +429,19 @@ class DataLoader(object):
         # score = np.array(score)
         # score = torch.Tensor(score)
 
-        delta_source_grid = [[[] for _ in range(self.n_source_grid)] for _ in ['Starbucks', 'Dunkin\'']]
-        delta_target_grid = [[[] for _ in range(self.n_target_grid)] for _ in ['Starbucks', 'Dunkin\'']]
+        delta_source_grid = [[[] for _ in range(self.n_source_grid)] for _ in self.args.enterprise]
+        delta_target_grid = [[[] for _ in range(self.n_target_grid)] for _ in self.args.enterprise]
 
-        for idx, _ in enumerate(['Starbucks', 'Dunkin\'']):
+        for idx, _ in enumerate(self.args.enterprise):
             for source_grid_id in range(self.n_source_grid):
                 sorted_index = np.argsort(-score[idx][source_grid_id])
-                for k in range(min(8, self.n_target_grid)):
+                for k in range(min(self.args.gamma, self.n_target_grid)):
                     delta_source_grid[idx][source_grid_id].append(sorted_index[k])
 
-        for idx, _ in enumerate(['Starbucks', 'Dunkin\'']):
+        for idx, _ in enumerate(self.args.enterprise):
             for target_grid_id in range(self.n_target_grid):
                 sorted_index = np.argsort(-score[idx][:, target_grid_id])
-                for k in range(min(8, self.n_source_grid)):
+                for k in range(min(self.args.gamma, self.n_source_grid)):
                     delta_target_grid[idx][target_grid_id].append(sorted_index[k])
         # for idx in self.portion_enterprise_index:
         #     for target_grid_id in range(self.n_target_grid):

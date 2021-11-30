@@ -21,9 +21,9 @@ def parse_args():
     #                     help='Input enterprise to be selected.')
     # parser.add_argument('--target_enterprise', nargs='?', default='大众书局',
     #                     help='Input target enterprise to be transferred.')
-    parser.add_argument('--enterprise', nargs='?', default=['luckin coffee瑞幸咖啡', 'CoCo都可', '星巴克'],
+    parser.add_argument('--enterprise', nargs='?', default=['Starbucks', 'Dunkin\'', 'McDonald\'s'],
                         help='Input enterprise to be selected.')
-    parser.add_argument('--target_enterprise', nargs='?', default='CoCo都可',
+    parser.add_argument('--target_enterprise', nargs='?', default='Dunkin\'',
                         help='Input target enterprise to be transferred.')
     # parser.add_argument('--enterprise', nargs='?', default=['NIKE', 'New Balance', '李宁'],
     #                     help='Input enterprise to be selected.')
@@ -114,7 +114,7 @@ def parse_args():
 
     parser.add_argument('--lr', type=float, default=0.001,
                         help='Learning rate.')
-    parser.add_argument('--n_epoch', type=int, default=10000,
+    parser.add_argument('--n_epoch', type=int, default=10, #10000 TODO
                         help='Number of epoch.')
     parser.add_argument('--stopping_steps', type=int, default=10,
                         help='Number of epoch for early stopping')
