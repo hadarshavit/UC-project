@@ -388,8 +388,8 @@ class DataLoader(object):
             # big_category_POI_count = np.zeros(2)
             for POI in grid_info:
                 # big_category_POI_count[POI['categories']] += 1
-                # if POI[3] in valid_small_category_set:
-                #     Nc += 1
+                if POI['categories'] in valid_small_category_set:
+                    Nc += 1
                 for idx, name in enumerate(self.args.enterprise):
                     if POI['name'] == name:
                         # Equation (5)
