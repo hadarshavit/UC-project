@@ -12,14 +12,14 @@ import argparse
 from torch.nn.modules import pooling
 from utility.log_helper import logging
 
-#Define the original Autoencoder
 '''
+# Define the original Autoencoder
 class AutoEncoder(nn.Module):
     def __init__(self, in_dim, out_dim):
         super(AutoEncoder, self).__init__()
         self.mid_dim = math.ceil(math.sqrt(in_dim * out_dim))
         self.encoder = nn.Sequential(
-            nn.Linear(in_dim, self.mid_dim), # 全连接层的
+            nn.Linear(in_dim, self.mid_dim), # MLP
             nn.ReLU(),
             nn.Linear(self.mid_dim, out_dim),
         )
@@ -37,8 +37,8 @@ class AutoEncoder(nn.Module):
         return encoded_x, decoded_x
 '''
 
-#Define the MLP Autoencoder
 '''
+# Define the  ThreeLayer Denoising Model
 class denoising_model(nn.Module):
   def __init__(self, in_dim, out_dim):
     super(denoising_model,self).__init__()
@@ -69,33 +69,44 @@ class denoising_model(nn.Module):
         return encoded_x, decoded_x
 '''
 
-#Define the Convolutional Autoencoder
-class ConvAutoencoder(nn.Module):
-    def __init__(self, in_dim, out_dim):
-        super(ConvAutoencoder, self).__init__()
-        self.encoder = nn.Sequential( # like the Composition layer you built
-            nn.Conv2d(in_dim, 32, 3, stride=2, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(16, 32, 3, stride=2, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, 7)
-        )
-        self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(64, 32, 7),
-            nn.ReLU(),
-            nn.ConvTranspose2d(32, 16, 3, stride=2, padding=1, output_padding=1),
-            nn.ReLU(),
-            nn.ConvTranspose2d(16, out_dim, 3, stride=2, padding=1, output_padding=1),
-            nn.Sigmoid()
-        )
 
+# Define SparseAutoencoder
+class SparseAutoencoder(nn.Module):
+    def __init__(self, in_dim, out_dim):
+        super(SparseAutoencoder,self).__init__()
+        
+        # encoder
+        self.enc1 = nn.Linear(in_features=in_dim, out_features=256)
+        self.enc2 = nn.Linear(in_features=256, out_features=128)
+        self.enc3 = nn.Linear(in_features=128, out_features=64)
+        self.enc4 = nn.Linear(in_features=64, out_features=32)
+        self.enc5 = nn.Linear(in_features=32, out_features=out_dim)
+ 
+        # decoder 
+        self.dec1 = nn.Linear(in_features=out_dim, out_features=32)
+        self.dec2 = nn.Linear(in_features=32, out_features=64)
+        self.dec3 = nn.Linear(in_features=64, out_features=128)
+        self.dec4 = nn.Linear(in_features=128, out_features=256)
+        self.dec5 = nn.Linear(in_features=256, out_features=in_dim)
+ 
     def forward(self, x):
-        # Equation (15 & 16)
-        encoded_x = self.encoder(x)
-        # Equation (17 & 18)
-        decoded_x = self.decoder(encoded_x)
+        # encoding
+        encoded_x = F.relu(self.enc1(x))
+        encoded_x = F.relu(self.enc2(encoded_x))
+        encoded_x = F.relu(self.enc3(encoded_x))
+        encoded_x = F.relu(self.enc4(encoded_x))
+        encoded_x = F.relu(self.enc5(encoded_x))
+ 
+        # decoding
+        decoded_x = F.relu(self.dec1(encoded_x))
+        decoded_x = F.relu(self.dec2(decoded_x))
+        decoded_x = F.relu(self.dec3(decoded_x))
+        decoded_x = F.relu(self.dec4(decoded_x))
+        decoded_x = F.relu(self.dec5(decoded_x))
         return encoded_x, decoded_x
 
+
+      
 class CityTransfer(nn.Module):
     def __init__(self, args, feature_dim, n_source_grid, n_target_grid):
         super(CityTransfer, self).__init__()
@@ -103,8 +114,8 @@ class CityTransfer(nn.Module):
 
         # auto encoder
         self.auto_encoder = nn.ModuleList()
-        self.auto_encoder.append(ConvAutoencoder(feature_dim, self.args.auto_encoder_dim))  # source
-        self.auto_encoder.append(ConvAutoencoder(feature_dim, self.args.auto_encoder_dim))  # target
+        self.auto_encoder.append(CNNautoencoder(feature_dim, self.args.auto_encoder_dim))  # source
+        self.auto_encoder.append(CNNautoencoder(feature_dim, self.args.auto_encoder_dim))  # target
 
         # matrix factorization
         self.u = nn.Parameter(torch.Tensor(len(self.args.enterprise), self.args.auto_encoder_dim))

@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Time    : 2020/10/9 0009 8:49
-# @Author  : Binjie Zhang (bj_zhang@seu.edu.cn)
-# @File    : _discarded_data_loader.py
 import gc
 import math
 import os
@@ -10,6 +6,7 @@ import numpy as np
 import collections
 import random
 import torch
+import geopandas
 from utility.log_helper import logging
 from utility.utility_tool import _norm
 
@@ -32,6 +29,9 @@ class DataLoader(object):
 
         self.n_categories = len(cats)
 
+        target_bus_raw_data = pd.DataFrame(geopandas.read_file('bus_austin/Stops.shp'))
+        source_bus_raw_data = pd.read_csv('orlando_bus/stops.txt')
+
         # self.n_big_category = len(self.big_category_dict) #
         # self.n_small_category = len(self.small_category_dict)
         # logging.info("[1 /10]       load dianping data done.") # reviews
@@ -49,8 +49,9 @@ class DataLoader(object):
         logging.info("[3 /10]       split grid done.")
 
         # distribute data into grids
-        source_data_dict, target_data_dict, source_grid_enterprise_data, target_grid_enterprise_data \
-            = self.distribute_data(source_area_data, target_area_data) # put each review in the correct grid
+        source_data_dict, target_data_dict, source_grid_enterprise_data, target_grid_enterprise_data, \
+        source_bus_data, target_bus_data            \
+            = self.distribute_data(source_area_data, target_area_data, source_bus_raw_data, target_bus_raw_data) # put each review in the correct grid
         logging.info("[4 /10]       distribute data into grids done.")
 
         # generate rating matrix for Transfer Rating Prediction Model
@@ -60,12 +61,14 @@ class DataLoader(object):
 
         # extract geographic features
         source_geographic_features, target_geographic_features = self.extract_geographic_features(source_data_dict,
-                                                                                                  target_data_dict) # geo features
+                                                                                                  target_data_dict,
+                                                                                                  source_bus_data,
+                                                                                                  target_bus_data) # geo features
         logging.info("[6 /10]       extract geographic features done.")
 
         # extract commercial features
         source_commercial_features, target_commercial_features = \
-            self.extract_commercial_features(source_data_dict, target_data_dict) # commercial features
+            self.extract_commercial_features(source_data_dict, target_data_dict, valid_small_category_set) # commercial features
         logging.info("[7 /10]       extract commercial features done.")
 
         # combine features
@@ -140,11 +143,11 @@ class DataLoader(object):
         for _, item in source_area_data.iterrows():
             if item['name'] in self.args.enterprise:
                 source_chains[item['name']].append(item)
-                valid_small_category_set.add(item[3])  # TODO
+                valid_small_category_set.add(item['categories'])  # TODO
         for _, item in target_area_data.iterrows():
             if item['name'] in self.args.enterprise:
                 target_chains[item['name']].append(item)
-                valid_small_category_set.add(item[3]) # TODO
+                valid_small_category_set.add(item['categories']) # TODO
 
         for name in self.args.enterprise:
             if len(source_chains[name]) == 0 or len(target_chains[name]) == 0:
@@ -192,13 +195,15 @@ class DataLoader(object):
         return n_source_grid, n_target_grid, source_area_longitude_boundary, source_area_latitude_boundary, \
             target_area_longitude_boundary, target_area_latitude_boundary
 
-    def distribute_data(self, source_area_data, target_area_data):
+    def distribute_data(self, source_area_data, target_area_data, source_bus_data, target_bus_data):
         #  columns = ['shop_id', 'name', 'big_category', 'small_category',
         #             'longitude', 'latitude', 'review_count', 'branchname']
         source_data_dict = collections.defaultdict(list)
         target_data_dict = collections.defaultdict(list)
         source_grid_enterprise_data = collections.defaultdict(list)
         target_grid_enterprise_data = collections.defaultdict(list)
+        source_bus_dict = collections.defaultdict(list)
+        target_bus_dict = collections.defaultdict(list)
         a = 0
         for _, item in source_area_data.iterrows():
             lon_index = 0
@@ -226,6 +231,31 @@ class DataLoader(object):
             if item['name'] in self.args.enterprise:
                 source_grid_enterprise_data[grid_id].append(item)
         print('not found source:', a, source_area_data.size)
+
+        for _, item in source_bus_data.iterrows():
+            lon_index = 0
+            found = False
+            for index, _ in enumerate(self.source_area_longitude_boundary[:-1]):
+                if self.source_area_longitude_boundary[index] <= item['LONGITUDE'] <= self.source_area_longitude_boundary[index + 1]:
+                    lon_index = index
+                    found = True
+                    break
+            if not found:
+                a += 1
+                continue # TODO check why not found
+            lat_index = 0
+            found = False
+            for index, _ in enumerate(self.source_area_latitude_boundary[:-1]):
+                if self.source_area_latitude_boundary[index] <= item['LATITUDE'] <= self.source_area_latitude_boundary[index + 1]:
+                    lat_index = index
+                    found = True
+                    break
+            if not found:
+                a += 1
+                continue # TODO check why not found
+            grid_id = lon_index * (len(self.source_area_latitude_boundary) - 1) + lat_index
+            source_bus_dict[grid_id].append(item)
+
         a = 0
         for _, item in target_area_data.iterrows():
             lon_index = 0
@@ -253,20 +283,44 @@ class DataLoader(object):
             if item['name'] in self.args.enterprise:
                 target_grid_enterprise_data[grid_id].append(item)
         print('not found target', a, target_area_data.size)
-        return source_data_dict, target_data_dict, source_grid_enterprise_data, target_grid_enterprise_data
 
-    def extract_geographic_features(self, source_data_dict, target_data_dict):
+        for _, item in target_bus_data.iterrows():
+            lon_index = 0
+            found = False
+            for index, _ in enumerate(self.source_area_longitude_boundary[:-1]):
+                if self.source_area_longitude_boundary[index] <= item['LONGITUDE'] <= self.source_area_longitude_boundary[index + 1]:
+                    lon_index = index
+                    found = True
+                    break
+            if not found:
+                a += 1
+                continue # TODO check why not found
+            lat_index = 0
+            found = False
+            for index, _ in enumerate(self.source_area_latitude_boundary[:-1]):
+                if self.source_area_latitude_boundary[index] <= item['LATITUDE'] <= self.source_area_latitude_boundary[index + 1]:
+                    lat_index = index
+                    found = True
+                    break
+            if not found:
+                a += 1
+                continue # TODO check why not found
+            grid_id = lon_index * (len(self.source_area_latitude_boundary) - 1) + lat_index
+            target_bus_dict[grid_id].append(item)
+        return source_data_dict, target_data_dict, source_grid_enterprise_data, target_grid_enterprise_data, source_bus_dict, target_bus_dict
+
+    def extract_geographic_features(self, source_data_dict, target_data_dict, source_bus_data, target_bus_data):
         # traffic_convenience_corresponding_ids = [self.small_category_dict[x]
         #                                          for x in ['公交车', '地铁站', '停车场'] if x in self.small_category_dict] # bus, subway, parking lot
 
-        def get_feature(grid_info):
+        def get_feature(grid_info, bus_grid_info):
             #  columns = ['shop_id', 'name', 'big_category', 'small_category',
             #             'longitude', 'latitude', 'review_count', 'branchname']
 
             n_grid_POI = len(grid_info)
 
             human_flow = 0
-            traffic_convenience = 0
+            traffic_convenience = -len(bus_grid_info)
             POI_count = np.zeros(self.n_categories)
 
             for POI in grid_info:
@@ -288,9 +342,9 @@ class DataLoader(object):
         source_geographic_features = []
         target_geographic_features = []
         for index in range(self.n_source_grid):
-            source_geographic_features.append(get_feature(source_data_dict[index]))
+            source_geographic_features.append(get_feature(source_data_dict[index], source_bus_data[index]))
         for index in range(self.n_target_grid):
-            target_geographic_features.append(get_feature(target_data_dict[index]))
+            target_geographic_features.append(get_feature(target_data_dict[index], target_bus_data[index]))
 
         source_geographic_features, target_geographic_features = \
             np.array(source_geographic_features), np.array(target_geographic_features)
@@ -315,7 +369,7 @@ class DataLoader(object):
 
         return source_geographic_features, target_geographic_features
 
-    def extract_commercial_features(self, source_data_dict, target_data_dict):
+    def extract_commercial_features(self, source_data_dict, target_data_dict, valid_small_category_set):
         #  由于房价数据不准确，目前没有使用
         #  columns = ['shop_id', 'name', 'big_category', 'small_category',
         #             'longitude', 'latitude', 'review_count', 'branchname']
@@ -327,13 +381,13 @@ class DataLoader(object):
 
             grid_feature = np.zeros((len(self.args.enterprise), 3))
             Nc = 0
-            big_category_POI_count = np.zeros(2)
+            # big_category_POI_count = np.zeros(2)
             for POI in grid_info:
-                # big_category_POI_count[POI[2]] += 1
-                # if POI[3] in valid_small_category_set:
-                #     Nc += 1 TODO
+                # big_category_POI_count[POI['categories']] += 1
+                if POI['categories'] in valid_small_category_set:
+                    Nc += 1
                 for idx, name in enumerate(self.args.enterprise):
-                    if POI[1] == name:
+                    if POI['name'] == name:
                         # Equation (5)
                         grid_feature[idx][0] += 1
 
