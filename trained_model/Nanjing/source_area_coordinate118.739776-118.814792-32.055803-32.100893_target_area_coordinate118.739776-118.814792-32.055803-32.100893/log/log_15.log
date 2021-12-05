@@ -1,0 +1,54 @@
+2021-12-05 12:00:59,236 - root - INFO - Namespace(K=10, O1_print_every=1, O2_print_every=1, O3_print_every=1, O4_print_every=1, auto_encoder_dim=9, batch_size=32, circle_size=500, city_name='Nanjing', data_dir='datasets/', enterprise=['Starbucks', "Dunkin'", "McDonald's"], eps=1e-09, evaluate_every=1, gamma=8, grid_size_latitude_degree=0.005, grid_size_longitude_degree=0.005, lambda_1=1, lambda_2=0.5, lambda_3=0.5, lambda_4=0.025, lr=0.001, mess_dropout=0.1, n_epoch=10, print_every=100, save_dir='trained_model/Nanjing/source_area_coordinate118.739776-118.814792-32.055803-32.100893_target_area_coordinate118.739776-118.814792-32.055803-32.100893/', score_norm_max=400, seed=981125, source_area_coordinate=[118.739776, 118.814792, 32.055803, 32.100893], stopping_steps=10, target_area_coordinate=[118.729991, 118.808783, 32.011709, 32.055803], target_enterprise="Dunkin'")
+2021-12-05 12:00:59,236 - root - INFO - --------------parse args and init done.
+2021-12-05 12:01:01,967 - root - INFO - [2 /10]       check enterprise and get small category set.
+2021-12-05 12:01:01,968 - root - INFO - n_source_grid: 3481, n_target_grid: 8712
+2021-12-05 12:01:01,968 - root - INFO - [3 /10]       split grid done.
+2021-12-05 12:01:22,159 - root - INFO - [4 /10]       distribute data into grids done.
+2021-12-05 12:01:22,201 - root - INFO - [5 /10]       generate rating matrix for Transfer Rating Prediction Model done.
+2021-12-05 12:01:23,259 - root - INFO - [6 /10]       extract geographic features done.
+2021-12-05 12:01:23,611 - root - INFO - [7 /10]       extract commercial features done.
+2021-12-05 12:01:23,627 - root - INFO - [8 /10]       combine features done.
+2021-12-05 12:01:39,986 - root - INFO - [9 /10]       get PCCS and generate delta set done.
+2021-12-05 12:01:40,001 - root - INFO - [10/10]       generate training and testing index done.
+2021-12-05 12:01:40,083 - root - INFO - --------------load data done.
+2021-12-05 12:01:40,104 - root - INFO - CityTransfer(
+  (auto_encoder): ModuleList(
+    (0): ConvAutoencoder(
+      (encoder): Sequential(
+        (0): Conv2d(31, 16, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        (1): ReLU()
+        (2): Conv2d(16, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        (3): ReLU()
+        (4): Conv2d(32, 64, kernel_size=(7, 7), stride=(1, 1))
+      )
+      (decoder): Sequential(
+        (0): ConvTranspose2d(64, 32, kernel_size=(7, 7), stride=(1, 1))
+        (1): ReLU()
+        (2): ConvTranspose2d(32, 16, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), output_padding=(1, 1))
+        (3): ReLU()
+        (4): ConvTranspose2d(16, 9, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), output_padding=(1, 1))
+        (5): Sigmoid()
+      )
+    )
+    (1): ConvAutoencoder(
+      (encoder): Sequential(
+        (0): Conv2d(31, 16, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        (1): ReLU()
+        (2): Conv2d(16, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        (3): ReLU()
+        (4): Conv2d(32, 64, kernel_size=(7, 7), stride=(1, 1))
+      )
+      (decoder): Sequential(
+        (0): ConvTranspose2d(64, 32, kernel_size=(7, 7), stride=(1, 1))
+        (1): ReLU()
+        (2): ConvTranspose2d(32, 16, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), output_padding=(1, 1))
+        (3): ReLU()
+        (4): ConvTranspose2d(16, 9, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), output_padding=(1, 1))
+        (5): Sigmoid()
+      )
+    )
+  )
+)
+2021-12-05 12:01:40,105 - root - INFO - --------------construct model and optimizer done.
+2021-12-05 12:01:40,106 - root - INFO - --------------initialize metrics done.
+2021-12-05 12:01:40,106 - root - INFO - [!]-----------start training.

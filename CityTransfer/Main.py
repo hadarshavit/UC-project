@@ -10,12 +10,12 @@ import numpy as np
 import pandas as pd
 import torch
 import matplotlib.pyplot as plt
-from CityTransfer.utility.args_parser import parse_args
-from CityTransfer.utility.log_helper import logging, logging_config
-from CityTransfer.utility.new_data_loader  import DataLoader
-from CityTransfer.utility.metrics import ndcf_at_k_test, ndcf_at_k
-from CityTransfer.utility.visualization import VisualizationTool
-from CityTransfer.CityTransferModel import CityTransfer
+from utility.args_parser import parse_args
+from utility.log_helper import logging, logging_config
+from utility.new_data_loader  import DataLoader
+from utility.metrics import ndcf_at_k_test, ndcf_at_k
+from utility.visualization import VisualizationTool
+from CityTransferModel import CityTransfer
 
 DEBUG = True
 CUDA_AVAILABLE = False

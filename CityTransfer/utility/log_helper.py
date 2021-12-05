@@ -5,7 +5,7 @@
 
 import logging
 import re
-from CityTransfer.utility.utility_tool import *
+from utility.utility_tool import *
 
 
 def create_log_id(dir_path):

@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from CityTransfer.utility.log_helper import logging
+from utility.log_helper import logging
 
 
 def dcg_score(score, rank):

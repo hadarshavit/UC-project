@@ -10,8 +10,8 @@ import numpy as np
 import collections
 import random
 import torch
-from CityTransfer.utility.log_helper import logging
-from CityTransfer.utility.utility_tool import _norm
+from utility.log_helper import logging
+from utility.utility_tool import _norm
 
 
 class DataLoader(object):
