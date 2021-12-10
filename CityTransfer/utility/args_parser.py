@@ -9,11 +9,12 @@ import argparse
 def parse_args():
     parser = argparse.ArgumentParser(description="City Transfer Args.")
 
-    parser.add_argument('--seed', type=int, default=981125,
+    parser.add_argument('--seed', type=int, default=14563, # 981125
                         help='Random seed.')
-
-    parser.add_argument('--city_name', nargs='?', default='Nanjing',
+    parser.add_argument('--autoencoder')
+    parser.add_argument('--city_name', nargs='?', default='Austin',
                         help='Choose a city from {Nanjing}')
+    parser.add_argument('--add_artificial_data', type=bool, default=False)
     parser.add_argument('--data_dir', nargs='?', default='datasets/',
                         help='Input datasets path.')
 
@@ -21,9 +22,9 @@ def parse_args():
     #                     help='Input enterprise to be selected.')
     # parser.add_argument('--target_enterprise', nargs='?', default='大众书局',
     #                     help='Input target enterprise to be transferred.')
-    parser.add_argument('--enterprise', nargs='?', default=['Starbucks', 'Dunkin\'', 'McDonald\'s'],
+    parser.add_argument('--enterprise', nargs='?', default=['Wendy\'s', 'Burger King', 'McDonald\'s'],
                         help='Input enterprise to be selected.')
-    parser.add_argument('--target_enterprise', nargs='?', default='Dunkin\'',
+    parser.add_argument('--target_enterprise', nargs='?', default='Burger King',
                         help='Input target enterprise to be transferred.')
     # parser.add_argument('--enterprise', nargs='?', default=['NIKE', 'New Balance', '李宁'],
     #                     help='Input enterprise to be selected.')
@@ -114,7 +115,7 @@ def parse_args():
 
     parser.add_argument('--lr', type=float, default=0.001,
                         help='Learning rate.')
-    parser.add_argument('--n_epoch', type=int, default=10, #10000 TODO
+    parser.add_argument('--n_epoch', type=int, default=75, #10000 TODO
                         help='Number of epoch.')
     parser.add_argument('--stopping_steps', type=int, default=10,
                         help='Number of epoch for early stopping')
@@ -137,10 +138,13 @@ def parse_args():
     parser.add_argument('--score_norm_max', type=int, default=400,
                         help='score norm max.')
 
+    parser.add_argument('--autoencoder_type', type=int, default=1,
+                        help='autoencoder type')
+
     args = parser.parse_args()
 
     save_dir = 'trained_model/{}/source_area_coordinate{}_target_area_coordinate{}/'.format(
-        args.city_name, '-'.join([str(item) for item in args.source_area_coordinate]),
+        args.autoencoder + str(args.add_artificial_data), '-'.join([str(item) for item in args.source_area_coordinate]),
         '-'.join([str(item) for item in args.source_area_coordinate]))
     args.save_dir = save_dir
 

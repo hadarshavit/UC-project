@@ -186,10 +186,13 @@ if __name__ == '__main__':
         predict_score = model('prediction', data.target_enterprise_index,
                               data.target_grid_ids, feature)
 
-        final_mse = torch.nn.functional.mse_loss(real_score, predict_score)
+        final_mse = np.sqrt(torch.nn.functional.mse_loss(real_score, predict_score).cpu())
         final_ndcg, real_rank, pred_rank, pred_back_rank = ndcf_at_k_test(real_score, predict_score, args.K)
+        final_ndcg5, real_rank5, pred_rank5, pred_back_rank5 = ndcf_at_k_test(real_score, predict_score, 5)
+        final_ndcg1, real_rank1, pred_rank1, pred_back_rank1 = ndcf_at_k_test(real_score, predict_score, 1)
+        final_ndcg20, real_rank20, pred_rank20, pred_back_rank20 = ndcf_at_k_test(real_score, predict_score, 20)
 
-        logging.info('Test Result: NDCG {:.4f} | MSE {:.4f}'.format(final_ndcg, final_mse))
+        logging.info('Test Result: NDCG 10 {:.4f} | NDCG 5 {:.4f} |NDCG 1 {:.4f} |NDCG 20 {:.4f} |RMSE {:.4f}'.format(final_ndcg, final_ndcg5, final_ndcg1, final_ndcg20, final_mse))
 
         real_rank = data.target_grid_ids[real_rank]
         pred_rank = data.target_grid_ids[pred_rank]

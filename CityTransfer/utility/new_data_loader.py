@@ -28,6 +28,10 @@ class DataLoader(object):
             index += 1
 
         self.n_categories = len(cats)
+        if self.args.add_artificial_data:
+            print('Addidg Art')
+            self.n_categories += 1
+            self.categories['artificial'] = index
 
         target_bus_raw_data = pd.DataFrame(geopandas.read_file('bus_austin/Stops.shp'))
         source_bus_raw_data = pd.read_csv('orlando_bus/stops.txt')
@@ -230,6 +234,14 @@ class DataLoader(object):
             source_data_dict[grid_id].append(item)
             if item['name'] in self.args.enterprise:
                 source_grid_enterprise_data[grid_id].append(item)
+                if self.args.add_artificial_data: # TODO item['name'] == self.args.target_enterprise and
+                    print('adding_art')
+                    for _ in range(int(item['stars'] * item['review_count'])):
+                        artificial_item = dict()
+                        artificial_item['name'] = 'artificial'
+                        artificial_item['categories'] = 'artificial'
+                        artificial_item['review_count'] = 0
+                        source_data_dict[grid_id].append(artificial_item)
         print('not found source:', a, source_area_data.size)
 
         for _, item in source_bus_data.iterrows():
@@ -282,6 +294,26 @@ class DataLoader(object):
             target_data_dict[grid_id].append(item)
             if item['name'] in self.args.enterprise:
                 target_grid_enterprise_data[grid_id].append(item)
+                if self.args.add_artificial_data: # TODO item['name'] == self.args.target_enterprise and
+                    print('adding_art')
+                    for _ in range(int(item['stars'] * item['review_count'])):
+                        artificial_item = dict()
+                        artificial_item['name'] = 'artificial'
+                        artificial_item['categories'] = 'artificial'
+                        artificial_item['review_count'] = 0
+                        target_data_dict[grid_id].append(artificial_item)
+
+        if self.args.add_artificial_data:
+            self.random_artificial_grid_ids = [random.choice(list(target_data_dict.keys())) for i in range(20)]
+            self.artificial_ratings = np.sort([random.randint(10, 100) for i in range(20)])
+
+            for i in range(len(self.random_artificial_grid_ids)):
+                for j in range(self.artificial_ratings[i]):
+                    artificial_item = dict()
+                    artificial_item['name'] = 'artificial'
+                    artificial_item['categories'] = 'artificial'
+                    artificial_item['review_count'] = 0
+                    source_data_dict[self.random_artificial_grid_ids[i]].append(artificial_item)
         print('not found target', a, target_area_data.size)
 
         for _, item in target_bus_data.iterrows():
@@ -438,6 +470,10 @@ class DataLoader(object):
     def generate_rating_matrix(self, source_grid_enterprise_data, target_grid_enterprise_data):
         # columns = ['shop_id', 'name', 'big_category', 'small_category',
         #             'longitude', 'latitude', 'review_count', 'branchname']
+        # if self.args.add_artificial_data:
+        #     self.random_artificial_grid_ids = [random.choice(list(target_data_dict.keys())) for i in range(20)]
+        #     self.artificial_ratings = np.sort([random.randint(100, 1000) for i in range(20)])
+
         source_rating_matrix = np.zeros((len(self.args.enterprise), self.n_source_grid))
         target_rating_matrix = np.zeros((len(self.args.enterprise), self.n_target_grid))
         for grid_id in range(self.n_source_grid):
@@ -445,12 +481,19 @@ class DataLoader(object):
                 for idx, name in enumerate(self.args.enterprise):
                     if item['name'] == name:
                         source_rating_matrix[idx][grid_id] += item['stars'] * item['review_count'] # TODO maybe change?
-
         for grid_id in range(self.n_target_grid):
             for item in target_grid_enterprise_data[grid_id]:
                 for idx, name in enumerate(self.args.enterprise):
                     if item['name'] == name:
                         target_rating_matrix[idx][grid_id] += item['stars'] * item['review_count'] # TODO
+        if self.args.add_artificial_data:
+            idx = 0
+            for ent in self.args.enterprise:
+                if ent == self.args.target_enterprise:
+                    break
+                idx += 1
+            for i in range(len(self.random_artificial_grid_ids)):
+                target_rating_matrix[idx][self.random_artificial_grid_ids[i]] += self.artificial_ratings[i]
         # score_max = max(np.max(source_rating_matrix), np.max(target_rating_matrix))
         # score_min = min(np.min(source_rating_matrix), np.min(target_rating_matrix))
         # source_rating_matrix = _norm(source_rating_matrix, score_max, score_min) * 5
