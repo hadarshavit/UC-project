@@ -39,7 +39,6 @@ class AutoEncoder(nn.Module):
         decoded_x = self.decoder(encoded_x)
         return encoded_x, decoded_x
 
-
 # Define the  ThreeLayer Denoising Model
 class TwoLayersAutoencoder(AutoEncoder):
     def _define_autoencoder(self, in_dim, out_dim):
@@ -62,7 +61,6 @@ class TwoLayersAutoencoder(AutoEncoder):
             nn.SELU(),
             nn.Linear(self.mid_dim1, in_dim),
         )
-
 
 # Define SparseAutoencoder
 class FourLayerAutoencoder(AutoEncoder):
@@ -95,6 +93,98 @@ class FourLayerAutoencoder(AutoEncoder):
             nn.Linear(in_dim, in_dim)
         )
 
+# Define SparseAutoencoder
+class SixLayesAutoencoder(AutoEncoder):
+    def _define_autoencoder(self, in_dim, out_dim):
+        self.mid_dim1 = math.ceil(math.sqrt(in_dim * out_dim))
+        self.mid_dim2 = math.ceil(math.sqrt(self.mid_dim1 * out_dim))
+        self.mid_dim3 = math.ceil(math.sqrt(self.mid_dim2 * out_dim))
+        self.mid_dim4 = math.ceil(math.sqrt(self.mid_dim3 * out_dim))
+        self.mid_dim5 = math.ceil(math.sqrt(self.mid_dim4 * out_dim))
+        print('DEFINE SIX', self.mid_dim1, self.mid_dim2, self.mid_dim3,self.mid_dim4,self.mid_dim5)
+        self.encoder = nn.Sequential(
+            nn.Linear(in_dim, in_dim),
+            nn.SELU(),
+            nn.Linear(in_dim, self.mid_dim1),
+            nn.SELU(),
+            nn.Linear(self.mid_dim1, self.mid_dim2),
+            nn.SELU(),
+            nn.Linear(self.mid_dim2, self.mid_dim3),
+            nn.SELU(),
+            nn.Linear(self.mid_dim3, self.mid_dim4),
+            nn.SELU(),
+            nn.Linear(self.mid_dim4, self.mid_dim5),
+            nn.SELU(),
+            nn.Linear(self.mid_dim5, out_dim),
+        )
+
+        self.decoder = nn.Sequential(
+            nn.Linear(out_dim, self.mid_dim5),
+            nn.SELU(),
+            nn.Linear(self.mid_dim5, self.mid_dim4),
+            nn.SELU(),
+            nn.Linear(self.mid_dim4, self.mid_dim3),
+            nn.SELU(),
+            nn.Linear(self.mid_dim3, self.mid_dim2),
+            nn.SELU(),
+            nn.Linear(self.mid_dim2, self.mid_dim1),
+            nn.SELU(),
+            nn.Linear(self.mid_dim1, in_dim),
+            nn.SELU(),
+            nn.Linear(in_dim, in_dim)
+        )
+
+# Define SparseAutoencoder
+class EightLayesAutoencoder(AutoEncoder):
+    def _define_autoencoder(self, in_dim, out_dim):
+        self.mid_dim1 = math.ceil(math.sqrt(in_dim * out_dim))
+        self.mid_dim2 = math.ceil(math.sqrt(self.mid_dim1 * out_dim))
+        self.mid_dim3 = math.ceil(math.sqrt(self.mid_dim2 * out_dim))
+        self.mid_dim4 = math.ceil(math.sqrt(self.mid_dim3 * out_dim))
+        self.mid_dim5 = math.ceil(math.sqrt(self.mid_dim4 * out_dim))
+        self.mid_dim6 = math.ceil(math.sqrt(self.mid_dim5 * out_dim))
+        self.mid_dim7 = math.ceil(math.sqrt(self.mid_dim6 * out_dim))
+        print('DEFINE eight', self.mid_dim1, self.mid_dim2, self.mid_dim3,self.mid_dim4,self.mid_dim5,self.mid_dim6,self.mid_dim7)
+        self.encoder = nn.Sequential(
+            nn.Linear(in_dim, in_dim),
+            nn.SELU(),
+            nn.Linear(in_dim, self.mid_dim1),
+            nn.SELU(),
+            nn.Linear(self.mid_dim1, self.mid_dim2),
+            nn.SELU(),
+            nn.Linear(self.mid_dim2, self.mid_dim3),
+            nn.SELU(),
+            nn.Linear(self.mid_dim3, self.mid_dim4),
+            nn.SELU(),
+            nn.Linear(self.mid_dim4, self.mid_dim5),
+            nn.SELU(),
+            nn.Linear(self.mid_dim5, self.mid_dim6),
+            nn.SELU(),
+            nn.Linear(self.mid_dim6, self.mid_dim7),
+            nn.SELU(),
+            nn.Linear(self.mid_dim7, out_dim),
+        )
+
+        self.decoder = nn.Sequential(
+            nn.Linear(out_dim, self.mid_dim7),
+            nn.SELU(),
+            nn.Linear(self.mid_dim7, self.mid_dim6),
+            nn.SELU(),
+            nn.Linear(self.mid_dim6, self.mid_dim5),
+            nn.SELU(),
+            nn.Linear(self.mid_dim5, self.mid_dim4),
+            nn.SELU(),
+            nn.Linear(self.mid_dim4, self.mid_dim3),
+            nn.SELU(),
+            nn.Linear(self.mid_dim3, self.mid_dim2),
+            nn.SELU(),
+            nn.Linear(self.mid_dim2, self.mid_dim1),
+            nn.SELU(),
+            nn.Linear(self.mid_dim1, in_dim),
+            nn.SELU(),
+            nn.Linear(in_dim, in_dim)
+        )
+
 
 class CityTransfer(nn.Module):
     def __init__(self, args, feature_dim, n_source_grid, n_target_grid):
@@ -112,6 +202,12 @@ class CityTransfer(nn.Module):
         elif args.autoencoder == 'Default':
             self.auto_encoder.append(AutoEncoder(feature_dim, self.args.auto_encoder_dim))  # source
             self.auto_encoder.append(AutoEncoder(feature_dim, self.args.auto_encoder_dim))  # target
+        elif args.autoencoder == 'SixLayersAC':
+            self.auto_encoder.append(SixLayesAutoencoder(feature_dim, self.args.auto_encoder_dim))  # source
+            self.auto_encoder.append(SixLayesAutoencoder(feature_dim, self.args.auto_encoder_dim))  # target
+        elif args.autoencoder == 'EightLayersAC':
+            self.auto_encoder.append(EightLayesAutoencoder(feature_dim, self.args.auto_encoder_dim))  # source
+            self.auto_encoder.append(EightLayesAutoencoder(feature_dim, self.args.auto_encoder_dim))  # target
         else:
             assert False
 
