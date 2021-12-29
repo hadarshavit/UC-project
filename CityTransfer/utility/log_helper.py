@@ -45,3 +45,5 @@ def logging_config(folder=None,
         log_console.setLevel(console_level)
         log_console.setFormatter(formatter)
         logging.root.addHandler(log_console)
+
+    return log_dir_path, log_id

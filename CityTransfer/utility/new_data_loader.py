@@ -28,6 +28,7 @@ class DataLoader(object):
             index += 1
 
         self.n_categories = len(cats)
+        print(self.n_categories)
         if self.args.add_artificial_data:
             print('Addidg Art')
             self.n_categories += 1

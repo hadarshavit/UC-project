@@ -2,7 +2,7 @@
 # @Time    : 2020/10/9 0009 8:48
 # @Author  : Binjie Zhang (bj_zhang@seu.edu.cn)
 # @File    : _discarded_Main.py
-
+import pickle
 import random
 from time import time
 
@@ -16,11 +16,29 @@ from utility.new_data_loader  import DataLoader
 from utility.metrics import ndcf_at_k_test, ndcf_at_k
 from utility.visualization import VisualizationTool
 from CityTransferModel import CityTransfer
+import subprocess
+import sys
+import os
 
 DEBUG = True
 CUDA_AVAILABLE = False
 DEVICE = None
 N_GPU = 0
+
+def get_free_gpu():
+    output_file = open(os.path.join(os.getcwd(), 'tmp'), 'w')
+    subprocess.call(["nvidia-smi", "--format=csv", "--query-gpu=memory.used,memory.free"], stdout=output_file, )
+    output_file.close()
+    gpu_df = pd.read_csv('tmp', names=['memory.used', 'memory.free'], skiprows=1)
+
+    gpu_df['memory.free'] = gpu_df['memory.free'].map(lambda x: x.rstrip(' [MiB]'))
+    gpu_df['memory.used'] = gpu_df['memory.used'].map(lambda x: x.rstrip(' [MiB]'))
+
+    gpu_df = gpu_df.astype(dtype=float, copy=False)
+    idx = gpu_df['memory.free'].idxmax()
+    print(idx)
+    return idx
+
 
 
 def system_init(system_args):
@@ -30,12 +48,15 @@ def system_init(system_args):
     torch.manual_seed(system_args.seed)
 
     # init log
-    logging_config(system_args.save_dir, no_console=False)
+    path, id = logging_config(system_args.save_dir, no_console=True)
 
     # CUDA
     global CUDA_AVAILABLE, DEVICE, N_GPU
+    free_gpu_id = get_free_gpu()
+    torch.cuda.set_device(free_gpu_id)
+
     CUDA_AVAILABLE = torch.cuda.is_available()
-    DEVICE = torch.device("cuda" if CUDA_AVAILABLE else "cpu")
+    DEVICE = torch.device(free_gpu_id) # torch.device("cuda" if CUDA_AVAILABLE else "cpu")
     N_GPU = torch.cuda.device_count()
     if N_GPU > 0:
         torch.cuda.manual_seed_all(system_args.seed)
@@ -44,11 +65,13 @@ def system_init(system_args):
     # 显示所有列
     pd.set_option('display.max_columns', None)
 
+    return path, id
+
 
 if __name__ == '__main__':
     # get args and init
     args = parse_args()
-    system_init(args)
+    path, id = system_init(args)
     logging.info(args)
     logging.info("--------------parse args and init done.")
 
@@ -167,6 +190,9 @@ if __name__ == '__main__':
                                  format(epoch, ndcg_epoch, mse_epoch))
 
     logging.info("[!]-----------training done.")
+
+    np.save(os.path.join(path, f'ndcg{id}'), ndcg_list)
+    np.save(os.path.join(path, f'mse{id}'), mse_list)
 
     plt.subplot(1, 2, 1)
     plt.xlabel("epoch")
